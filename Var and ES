@@ -1,0 +1,128 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+
+df = pd.read_csv("/content/RIL_Closing.csv")
+
+df["Date"] = pd.to_datetime(df["Date"], dayfirst=True)
+df = df.sort_values("Date")
+
+df["retunrs"] = df["Close"].pct_change()
+
+returns = df["retunrs"].dropna()
+
+
+### Inputs 
+
+portfolio_value = 200000
+confidence_level = 0.95
+
+
+### Historical Var 
+
+var_percentile = 1 - confidence_level 
+
+historical_var_return = np.percentile(
+    returns, var_percentile * 100)
+
+historical_var =   portfolio_value * abs(historical_var_return)
+
+### Historical Expected Shortfall
+
+historical_tail_losses  = returns[returns <= historical_var_return]
+
+historical_ES_return = np.mean(historical_tail_losses)
+
+historical_ES  = portfolio_value * abs(historical_ES_return)
+
+### Parametric Var
+
+para_mean = np.mean(returns)
+para_std = np.std(returns)
+
+Z_score = norm.ppf(1- confidence_level)
+para_var_return = para_mean + Z_score * para_std
+
+para_var_value = portfolio_value * abs(para_var_return)
+
+
+### Monte Carlo Var,  # No cholesky decomposition bcos single asset and no correlation. 
+
+np.random.seed(42)
+
+number_of_simulation = 10000
+
+simulated_return = np.random.normal(para_mean, para_std, number_of_simulation)
+
+monte_carlo_var_return = np.percentile(simulated_return, var_percentile * 100)
+
+
+monte_carlo_var = portfolio_value * abs(monte_carlo_var_return)
+
+
+### Monte Carlo ES 
+
+monte_carlo_tail_losses = simulated_return[simulated_return <= monte_carlo_var_return]
+
+monte_carlo_ES_return = np.mean(monte_carlo_tail_losses)
+
+monte_carlo_ES = portfolio_value * abs(monte_carlo_ES_return)
+
+
+
+### Comparison Table 
+
+comparison_table = pd.DataFrame({
+    "Risk_measures": [
+        "Historical VaR",
+        "Historical ES",
+        "Parametric VaR",
+        "Monte Carlo VaR",
+        "Monte Carlo ES"
+    ],
+
+    "return_level": [
+        historical_var_return,
+        historical_ES_return,
+        para_var_return,
+        monte_carlo_var_return,
+        monte_carlo_ES_return
+    ],
+
+    "Amount": [
+        historical_var,
+        historical_ES,
+        para_var_value,
+        monte_carlo_var,
+        monte_carlo_ES
+    ]
+})
+
+comparison_table["return_level"] = comparison_table["return_level"].round(6)
+comparison_table["Amount"] = comparison_table["Amount"].round(2)
+
+print("Var and Expected Shortfall Comparison:")
+print(comparison_table)
+
+### Chart 
+
+plt.figure(figsize=(12,6))
+
+plt.bar(
+    comparison_table["Risk_measures"],
+    comparison_table["Amount"]
+)
+
+plt.title("Comparison of VaR and Expected Shortfall Methods")
+plt.xlabel("Risk Measure")
+plt.ylabel("Amount")
+plt.xticks(rotation=45, ha="right")
+plt.grid(axis="y")
+plt.tight_layout()
+plt.show()
+
+
+        
+
+        
