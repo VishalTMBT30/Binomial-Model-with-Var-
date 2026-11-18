@@ -1,0 +1,115 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import math 
+
+
+def american_call_binomial(S0,K,T,r,sigma,N):  # N = No. of column of tree.
+  
+  # Time per Step
+
+  dt = T / N
+  
+  # Up and down factors 
+
+  u = math.exp(sigma * math.sqrt(dt))
+  d = 1 / u
+  
+
+  # Risk-free growth factor and discount factor
+
+  R = math.exp(r * dt)
+  discount_factor = math.exp(-r * dt)
+
+
+  # Risk Neutrality Probability  
+
+  p = (R-d) / (u - d)
+
+  
+  # Calculate option payoffs at maturity
+  option_values = []
+
+  for i in range(N + 1):
+    stock_price = S0 * (u ** i) * (d ** (N - i))
+    payoff = max(stock_price - K, 0)
+    option_values.append(payoff)
+
+  option_values = np.array(option_values)
+
+  # Work backward through the tree
+  for step in range(N - 1, -1, -1):
+    new_option_values = []
+
+    for i in range(step + 1):
+      stock_price = S0 * (u ** i) * (d ** (step - i))
+
+      hold_value = discount_factor * (
+          p * option_values[i + 1] + (1 - p) * option_values[i]
+      )
+
+      exercise_value = max(stock_price - K, 0)
+
+      american_value = max(hold_value, exercise_value)
+
+      new_option_values.append(american_value)
+
+    option_values = np.array(new_option_values)
+
+  return option_values[0]
+
+
+
+### Inputs 
+
+S0 = 90 
+K = 90 
+T = 3
+r = 0.05
+sigma = 0.25
+
+steps_list= [2, 20, 100, 1000, 2000]
+
+results  = []
+
+for N in steps_list:
+  price = american_call_binomial(S0, K, T, r, sigma, N)
+  results.append({
+      "Steps": N,
+      "American Call Price": price
+  })
+
+
+###  results table 
+
+results_df = pd.DataFrame(results)
+
+results_df["American Call Price"] = results_df["American Call Price"].round(6)
+
+
+print("American Call Option Using Binomial Option Pricing model:")
+print(results_df)
+
+
+### Chart 
+
+plt.figure(figsize=(12,6))
+
+plt.plot(
+    results_df["Steps"],
+    results_df["American Call Price"],
+    marker="o",
+    label = "American Call Price"
+)
+
+plt.title("American Option pricing using Binomial Model")
+plt.xlabel("steps")
+plt.ylabel("American Call Option Price")
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+ 
+
