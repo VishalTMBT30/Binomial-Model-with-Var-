@@ -1,0 +1,88 @@
+import math
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt 
+from scipy.stats import norm
+
+
+### input 
+
+S0 = 100
+K = 105
+T = 1       # 1 year
+r = 0.05
+sigma = 0.20
+
+N = 100    # number of time step in Binomial Model 
+num_sims = 10000
+
+### Binomial Model
+
+## The binomial model is a general framework that prices options on a two-state tree using risk-neutral valuation and backward induction. 
+## CRR is a specific version of it where u and d are calibrated to volatility, giving a recombining tree that converges to Black-Scholes.”
+
+def europian_call_option(S0, K,r,T,sigma, N):
+  dt = T / N     # delta t
+
+  u = math.exp(sigma * math.sqrt(dt))
+  d = 1 / u
+
+  R = math.exp(r * dt)
+
+  p = (R - d) / (u - d)
+
+  discount_factor = math.exp(-r *dt)
+
+  option_value = []
+
+  for i in range(N + 1):
+    stock_price = S0 *(u**i) * (d**(N-i))
+    payoff = max(stock_price - K, 0)
+    option_value.append(payoff)
+
+  option_values = np.array(option_values)
+
+  for step in range(N - 1, -1, -1):
+    # (start, Stop, Step)
+
+    new_option_values = []
+
+    for i in range(step + 1):
+      option_value = discount_factor * (p * option_values[i + 1] + (1 - p)* option_values[i]
+      )
+
+      new_option_values.append(option_value)
+
+    option_values = np.array(new_option_values)
+
+  return option_values[0]
+
+
+
+
+
+### Monte Carlo Simulation Model 
+
+def monte_carlo_call(S0,K,T,r,sigma, num_sims):
+  np.normal.seed(42)
+
+  Z = np.random.standard_normal(num_sims)
+
+  ST = S0 * np.exp(
+      (r - 0.5 * sigma ** 2) * T
+      + sigma * math.sqrt(T) * Z
+  )
+
+  payoff = np.maximum(ST - K, 0)
+
+  call_price = math.exp(-r * T) * np.mean(payoff)
+
+  return call_price    
+
+
+
+
+
+
+
+
