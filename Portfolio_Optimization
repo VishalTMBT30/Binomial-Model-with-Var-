@@ -1,0 +1,117 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+assets_returns = np.array([0.10, 0.15, 0.20])
+
+cov_matrix = np.array([
+    [0.040, 0.010, 0.005],
+    [0.010, 0.090, 0.015],
+    [0.005, 0.015, 0.160]
+])
+
+risk_free_rate = 0.05
+
+fixed_weights = np.array([0.40, 0.35, 0.25])
+
+fixed_portfolio_return = np.sum(assets_returns * fixed_weights)
+
+fixed_portfolio_variance = np.dot(
+    fixed_weights.T,
+    np.dot(cov_matrix, fixed_weights)
+)
+
+fixed_portfolio_risk = np.sqrt(fixed_portfolio_variance)
+
+### Sharpe Ratio
+
+fixed_sharpe_ratio = ((fixed_portfolio_return - risk_free_rate) / fixed_portfolio_risk)
+
+print("Fixed Portfolio")
+print("Return:", round(fixed_portfolio_return, 4))
+print("Return (%):", round(fixed_portfolio_return * 100, 2))
+print("Risk:", round(fixed_portfolio_risk, 4))
+print("Risk (%):", round(fixed_portfolio_risk * 100, 2))
+print("Sharpe Ratio:", round(fixed_sharpe_ratio, 4))
+
+### Simulating Random Portfolio
+
+np.random.seed(42)
+
+portfolio_returns = []
+portfolio_risks = []
+portfolio_sharpe = []
+portfolio_weights = []
+
+num_portfolios = 10000
+
+for i in range(num_portfolios):
+    random_weights = np.random.random(3)
+    random_weights = random_weights / np.sum(random_weights)
+
+    
+    p_ret = np.sum(assets_returns * random_weights)
+    p_var = np.dot(random_weights.T, np.dot(cov_matrix, random_weights))
+    p_risk = np.sqrt(p_var)
+    p_sharpe = ((p_ret - risk_free_rate) / p_risk)
+
+    portfolio_returns.append(p_ret)
+    portfolio_weights.append(random_weights)
+    portfolio_risks.append(p_risk)
+    portfolio_sharpe.append(p_sharpe)
+
+### Convert lists to numpy arrays for calculation and plotting
+portfolio_returns = np.array(portfolio_returns)
+portfolio_risks = np.array(portfolio_risks)
+portfolio_sharpe = np.array(portfolio_sharpe)
+portfolio_weights = np.array(portfolio_weights)
+
+### Find Portfolio with Maximum Sharpe Ratio
+max_sharpe_idx = np.argmax(portfolio_sharpe)
+
+max_sharpe_return = portfolio_returns[max_sharpe_idx]
+max_sharpe_risk = portfolio_risks[max_sharpe_idx]
+max_sharpe_ratio = portfolio_sharpe[max_sharpe_idx]
+max_sharpe_weights = portfolio_weights[max_sharpe_idx]
+
+print("\nMaximum Sharpe Ratio Portfolio")
+print("Return:", round(max_sharpe_return, 4))
+print("Return (%):", round(max_sharpe_return * 100, 2))
+print("Risk:", round(max_sharpe_risk, 4))
+print("Risk (%):", round(max_sharpe_risk * 100, 2))
+print("Sharpe Ratio:", round(max_sharpe_ratio, 4))
+
+print("\nMaximum Sharpe Portfolio Weights")
+print("Asset A:", round(max_sharpe_weights[0] * 100, 2), "%")
+print("Asset B:", round(max_sharpe_weights[1] * 100, 2), "%")
+print("Asset C:", round(max_sharpe_weights[2] * 100, 2), "%")
+
+### Plot
+plt.figure(figsize=(12, 7))
+
+plt.scatter(
+    portfolio_risks,
+    portfolio_returns,
+    c=portfolio_sharpe,
+    cmap="viridis",
+    alpha=0.4
+)
+
+plt.colorbar(label="Sharpe Ratio")
+
+plt.scatter(
+    max_sharpe_risk,
+    max_sharpe_return,
+    color='red',
+    marker='*',
+    s=300,
+    label="Maximum Sharpe Portfolio"
+)
+
+plt.title("Portfolio Optimization: Risk vs Return")
+plt.xlabel("Portfolio Risk (Standard Deviation)")
+plt.ylabel("Portfolio Return")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
